@@ -1,10 +1,10 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, screen } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+const robot = require("robotjs")
 
 const BluetoothHciSocket = require('@stoprocent/bluetooth-hci-socket')
-const socket = new BluetoothHciSocket()
 let selectBleDevCallback = undefined
 let timer_BleSearch = 0
 
@@ -26,14 +26,15 @@ function createWindow() {
     mainWindow.show()
   })
 
+  /* 检测指定蓝牙设备并选择 */
   mainWindow.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
     event.preventDefault() //important, otherwise first available device will be selected
     console.log(deviceList.length, "---", deviceList) //if you want to see the devices in the shell
-    let bleDevs = deviceList
     if (!selectBleDevCallback) {
       selectBleDevCallback = callback
       timer_BleSearch = setTimeout(() => {
         selectBleDevCallback("")
+        console.log("search overtime")
         selectBleDevCallback = undefined
       }, 5000)
     }
@@ -42,9 +43,6 @@ function createWindow() {
       selectBleDevCallback = undefined
       callback(deviceList[0].deviceId)
     }
-
-     //to make it accessible outside createWindow()
-    // mainWindow.webContents.send('m:bleDevsFound', bleDevs)
   });
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -61,16 +59,16 @@ function createWindow() {
   }
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
+
 app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
+  // 获取主显示器的宽高
+  const mainDisplay = screen.getPrimaryDisplay()
+  const screenW = mainDisplay.size.width;
+  const screenH = mainDisplay.size.height;
+
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
@@ -78,37 +76,28 @@ app.whenReady().then(() => {
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
 
-  // // 连接或断开
-  // ipcMain.handle("r:connectBle", async (ev, deviceId) => {
-  //   console.log("deviceID:  ", deviceId)
-  //   try {
-  //     selectBleDevCallback(deviceId)
-  //   } catch (e) {console.log("connect err:", e)}
-  //   return 0
-  // })
-
-  // noble.on("discover", function(peripheral) {
-  //   console.log('peripheral discovered: ' + peripheral.advertisement.localName)
-  //   console.log('peripheral UUID: ' + peripheral.uuid)
-  // })
+  /* 模拟计算机操作 */
+  ipcMain.on("r:mockCmd", (_, cmd) => {
+    console.log("get mockCmd:", cmd)
+    setTimeout(() => {
+      try{
+        robot.keyTap(cmd)
+      } catch(e) {console.log(e)}
+    }, 5000)
+  })
 
   createWindow()
 
   app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
 })
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+
