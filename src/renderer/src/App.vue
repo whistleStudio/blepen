@@ -13,6 +13,15 @@
         <a-checkbox v-model:checked="v.checked"></a-checkbox>
         <a-input class="ipBleMsg" v-model:value="v.bleMsg" placeholder="接收语句" :key="v"/>
         ➡️ &nbsp;
+        <a-space>
+          <a-select v-model:value="v.valbase" style="width: 120px" :options="v.cmdbase"
+          ></a-select>
+          <a-select
+            v-model:value="secondCity"
+            style="width: 120px"
+            :options="cities.map(city => ({ value: city }))"
+          ></a-select>
+        </a-space>
         <a-select v-model:value="v.val" :options="v.cmds"  size="middle"  style="width: 200px"></a-select>
       </li>
     </ul>
@@ -38,11 +47,11 @@ const alertInfo = reactive({
 })
 const connectBtnSta = reactive({ code: 0, text: "连接"})
 const cmdMap = reactive([
-  {checked: false, bleMsg: "", cmds: codeMap.map(v => ({value: v[0], label: v[1]})), val: "A"},
-  {checked: false, bleMsg: "", cmds: codeMap.map(v => ({value: v[0], label: v[1]})), val: "A"},
-  {checked: false, bleMsg: "", cmds: codeMap.map(v => ({value: v[0], label: v[1]})), val: "A"},
-  {checked: false, bleMsg: "", cmds: codeMap.map(v => ({value: v[0], label: v[1]})), val: "A"},
-  {checked: false, bleMsg: "", cmds: codeMap.map(v => ({value: v[0], label: v[1]})), val: "A"}
+  {checked: false, bleMsg: "", cmdbase: [{value: "鼠标"}, {value: "键盘"}], valbase: "键盘", cmds: codeMap.map(v => ({value: v[0], label: v[1]})), val: "A"},
+  {checked: false, bleMsg: "", cmdbase: [{value: "鼠标"}, {value: "键盘"}], valbase: "键盘", cmds: codeMap.map(v => ({value: v[0], label: v[1]})), val: "A"},
+  {checked: false, bleMsg: "", cmdbase: [{value: "鼠标"}, {value: "键盘"}], valbase: "键盘", cmds: codeMap.map(v => ({value: v[0], label: v[1]})), val: "A"},
+  {checked: false, bleMsg: "", cmdbase: [{value: "鼠标"}, {value: "键盘"}], valbase: "键盘", cmds: codeMap.map(v => ({value: v[0], label: v[1]})), val: "A"},
+  {checked: false, bleMsg: "", cmdbase: [{value: "鼠标"}, {value: "键盘"}], valbase: "键盘", cmds: codeMap.map(v => ({value: v[0], label: v[1]})), val: "A"}
 ]) 
 
 let primaryServiceUUID = "55535343-fe7d-4ae5-8fa9-9fafd205e455"
