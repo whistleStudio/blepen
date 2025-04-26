@@ -1,6 +1,6 @@
 <template>
   <!-- <Versions /> -->
-  <button @click="ipcHandle">Send IPC</button>
+  <!-- <button @click="ipcHandle">Send IPC</button> -->
   <a-alert class="alert" :message="alertInfo.msg" :type="alertInfo.tp" show-icon v-if="alertInfo.isShow"/>
   <div class="menu">
     <a-input v-model:value="bleName" placeholder="请输入蓝牙名称" class="ipBleName"
@@ -14,15 +14,9 @@
         <a-input class="ipBleMsg" v-model:value="v.bleMsg" placeholder="接收语句" :key="v"/>
         ➡️ &nbsp;
         <a-space>
-          <a-select v-model:value="v.valbase" style="width: 120px" :options="v.cmdbase"
-          ></a-select>
-          <a-select
-            v-model:value="secondCity"
-            style="width: 120px"
-            :options="cities.map(city => ({ value: city }))"
-          ></a-select>
+          <a-select v-model:value="v.valBase" label-in-value style="width: 120px" :options="cmdBase"></a-select>
+          <a-select v-model:value="v.val" label-in-value style="width: 120px" :options="cmdsOpts[i]" ></a-select>
         </a-space>
-        <a-select v-model:value="v.val" :options="v.cmds"  size="middle"  style="width: 200px"></a-select>
       </li>
     </ul>
 
@@ -35,7 +29,7 @@
 
 <script setup>
 // import Versions from './components/Versions.vue'
-import { ref, reactive, onBeforeUnmount } from 'vue'
+import { ref, reactive, onBeforeUnmount, computed, watch } from 'vue'
 import codeMap from './assets/docs/code-map'
 
 const ipcHandle = () => window.electron.ipcRenderer.send('ping')
@@ -46,16 +40,34 @@ const alertInfo = reactive({
   tp: "info", //success info warning error
 })
 const connectBtnSta = reactive({ code: 0, text: "连接"})
+const cmdBase = [{value: "MOUSE", label: "鼠标"}, {value: "KEY", label: "键盘"}]
 const cmdMap = reactive([
-  {checked: false, bleMsg: "", cmdbase: [{value: "鼠标"}, {value: "键盘"}], valbase: "键盘", cmds: codeMap.map(v => ({value: v[0], label: v[1]})), val: "A"},
-  {checked: false, bleMsg: "", cmdbase: [{value: "鼠标"}, {value: "键盘"}], valbase: "键盘", cmds: codeMap.map(v => ({value: v[0], label: v[1]})), val: "A"},
-  {checked: false, bleMsg: "", cmdbase: [{value: "鼠标"}, {value: "键盘"}], valbase: "键盘", cmds: codeMap.map(v => ({value: v[0], label: v[1]})), val: "A"},
-  {checked: false, bleMsg: "", cmdbase: [{value: "鼠标"}, {value: "键盘"}], valbase: "键盘", cmds: codeMap.map(v => ({value: v[0], label: v[1]})), val: "A"},
-  {checked: false, bleMsg: "", cmdbase: [{value: "鼠标"}, {value: "键盘"}], valbase: "键盘", cmds: codeMap.map(v => ({value: v[0], label: v[1]})), val: "A"}
+  {checked: false, bleMsg: "", valBase: {value: "KEY", label: "键盘"},  val: {value: "A", label: "A"}},
+  {checked: false, bleMsg: "", valBase: {value: "KEY", label: "键盘"},  val: {value: "A", label: "A"}},
+  {checked: false, bleMsg: "", valBase: {value: "KEY", label: "键盘"},  val: {value: "A", label: "A"}},
+  {checked: false, bleMsg: "", valBase: {value: "KEY", label: "键盘"},  val: {value: "A", label: "A"}},
+  {checked: false, bleMsg: "", valBase: {value: "KEY", label: "键盘"},  val: {value: "A", label: "A"}}
 ]) 
 
 let primaryServiceUUID = "55535343-fe7d-4ae5-8fa9-9fafd205e455"
 let bleDev
+
+let cmdsOpts = []
+
+for (let v of cmdMap) {
+  cmdsOpts.push(computed(() => codeMap[v.valBase.value].map(item => ({value: item[0], label: item[1]})))) 
+}
+watch(
+  () => cmdMap.map(v => v.valBase.value),
+  (newV, oldV) => {
+    for (let i in newV) {
+      if (newV[i] != oldV[i]) {
+        cmdMap[i].val = cmdsOpts[i].value[0]
+        continue
+      }
+    }
+  }
+)
 
 function connectBtnClick () {
   let bleGatt, errMsg=""
@@ -67,8 +79,6 @@ function connectBtnClick () {
       } else changeAlertInfo("蓝牙名称不能为空", "warning")
       break
     case 2:
-      // navigator.bluetooth.requestDevice({filters: [{ name: bleName.value }]})
-      // window.electron.ipcRenderer.invoke("r:connectBle", "")
       console.log(bleDev.gatt.connected)
       if (bleDev && bleDev.gatt.connected) bleDev.gatt.disconnect()
       console.log(bleDev.gatt.connected)
@@ -114,20 +124,20 @@ async function bleConnect (bleGatt, errMsg) {
   }
 }
 
-/* 设备连接-监听指令 */
+/* 设备连接-判定指令 */
 function detectBleCmd (penCmd) {
   for (let v of cmdMap) {
     if (v.checked) {
       console.log(`--${penCmd}--${v.bleMsg}--`)
       if (penCmd == v.bleMsg.trim()) {
-        window.electron.ipcRenderer.send("r:mockCmd", v.val)
+        window.electron.ipcRenderer.send("r:mockCmd", JSON.stringify(v.val))
       }
     }
   }
 }
 
 
-
+/* 事件监听：蓝牙连接状态 */
 let tim_onBleStatus
 function onBleStatus () {
   clearInterval(tim_onBleStatus)
@@ -139,7 +149,7 @@ function onBleStatus () {
     }
   }, 200)
 }
-
+/* alert通知 */
 let timer_alert = 0
 function changeAlertInfo(msg="", tp="info", isShow=true) {
   clearTimeout(timer_alert)
@@ -154,8 +164,9 @@ onBeforeUnmount(() => {
 })
 
 function testBtnClick () {
-  console.log(cmdMap[0].val)
-  // setTimeout(() => {window.electron.ipcRenderer.send("r:mockCmd", "a")}, 3000)
+  // console.log(cmdsOpts[0])
+  // console.log(cmdMap[0].val.value)
+  setTimeout(() => {window.electron.ipcRenderer.send("r:mockCmd", JSON.stringify(cmdMap[0].val))}, 3000)
 }
 </script>
 

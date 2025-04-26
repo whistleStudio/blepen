@@ -4,7 +4,6 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 const robot = require("robotjs")
 
-const BluetoothHciSocket = require('@stoprocent/bluetooth-hci-socket')
 let selectBleDevCallback = undefined
 let timer_BleSearch = 0
 
@@ -59,15 +58,15 @@ function createWindow() {
   }
 }
 
-
+let screenW, screenH
 app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
   // 获取主显示器的宽高
   const mainDisplay = screen.getPrimaryDisplay()
-  const screenW = mainDisplay.size.width;
-  const screenH = mainDisplay.size.height;
+  screenW = mainDisplay.size.width;
+  screenH = mainDisplay.size.height;
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
@@ -78,12 +77,15 @@ app.whenReady().then(() => {
 
   /* 模拟计算机操作 */
   ipcMain.on("r:mockCmd", (_, cmd) => {
+    cmd = JSON.parse(cmd)
     console.log("get mockCmd:", cmd)
     setTimeout(() => {
       try{
-        robot.keyTap(cmd)
+        if (/鼠标/.test(cmd.label)) {
+          mockMouse(cmd)
+        } else robot.keyTap(cmd.value)
       } catch(e) {console.log(e)}
-    }, 5000)
+    }, 1000)
   })
 
   createWindow()
@@ -100,4 +102,38 @@ app.on('window-all-closed', () => {
   }
 })
 
+/* 模拟计算机操作：鼠标行为 */
+function mockMouse (cmd) {
+  const curMousePos = robot.getMousePos()
+  switch (true) {
+    case /单击/.test(cmd.label):
+      robot.mouseClick(cmd.value.toLowerCase())
+      break
+    case /双击/.test(cmd.label):
+      robot.mouseClick("left", true)
+      break
+    case /滚轮向上/.test(cmd.label):
+      robot.scrollMouse(0, 200)
+      break
+    case /滚轮向下/.test(cmd.label):
+      robot.scrollMouse(0, -200)
+      break
+    case /鼠标左移/.test(cmd.label):
+      if (curMousePos.x-30 >= 0)
+        robot.moveMouseSmooth(curMousePos.x-30, curMousePos.y, 5)
+      break
+    case /鼠标右移/.test(cmd.label):
+      if (curMousePos.x+30 <= screenW)
+        robot.moveMouseSmooth(curMousePos.x+30, curMousePos.y, 5)
+      break
+    case /鼠标上移/.test(cmd.label):
+      if (curMousePos.y-30 >= 0)
+        robot.moveMouseSmooth(curMousePos.x, curMousePos.y-30, 5)
+      break
+    case /鼠标下移/.test(cmd.label):
+      if (curMousePos.y+30 <= screenH)
+        robot.moveMouseSmooth(curMousePos.x, curMousePos.y+30, 5)
+      break
+  }
+}
 

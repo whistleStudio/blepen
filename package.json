@@ -9,7 +9,7 @@
     "format": "prettier --write .",
     "lint": "eslint --cache .",
     "start": "electron-vite preview",
-    "dev": "electron-vite dev --watch",
+    "dev": "chcp 65001 && electron-vite dev --watch",
     "build": "electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
@@ -20,7 +20,6 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^4.0.0",
-    "@stoprocent/bluetooth-hci-socket": "^2.2.1",
     "ant-design-vue": "^4.2.6",
     "electron-updater": "^6.3.9",
     "noble": "^1.9.1",

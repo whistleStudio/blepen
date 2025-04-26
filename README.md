@@ -1,3 +1,11 @@
+#node v20
+#python3? 313
+
+solve problem: 
+node-gyp过程路径去除空格
+python -m pip install setuptools
+npm cache clean --force 清缓存再npm i
+
 # blepen
 
 An Electron application with Vue
