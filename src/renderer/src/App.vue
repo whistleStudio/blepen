@@ -22,7 +22,7 @@
       </li>
     </ul>
 
-    <!-- <a-button @click="testBtnClick">test</a-button> -->
+    <a-button @click="testBtnClick">test</a-button>
 
     <a-tooltip  title="嗐~来点音乐吧" color="#999" placement="right">
       <span class="app-name" @click="spAppNameClick">蓝牙遥控映射助手v1.0</span>
@@ -57,7 +57,7 @@ const cmdMap = reactive([
 ]) 
 
 let jumpHref = "https://whistlestudio.cn/#/home"
-let bleDev
+let bleDev, chList = []
 
 let cmdsOpts = []
 
@@ -110,17 +110,10 @@ async function bleConnect (bleGatt, errMsg) {
       connectBtnSta.code = 2
       errMsg=""
       const sv = await bleGatt.getPrimaryService(window.cfg.primaryServiceUUID)
-      for (let ch of await sv.getCharacteristics()) {
+      chList = await sv.getCharacteristics()
+      for (let ch of chList) {
         ch.startNotifications()
-        ch.addEventListener(
-        	  'characteristicvaluechanged', e => {
-        		//监听设备端的操作 获取到值之后再解析
-            const decoder = new TextDecoder("utf-8")
-            const penCmd = (decoder.decode(e.target.value.buffer.slice(window.cfg.msgStartIdx)).trim())
-            console.log(penCmd, penCmd.length)
-            detectBleCmd(penCmd)
-        	}
-        )
+        ch.addEventListener('characteristicvaluechanged', parseBuf)
       }
     } else {changeAlertInfo(msg, "error"); connectBtnSta.code = 0}
   } catch (e) {
@@ -128,6 +121,14 @@ async function bleConnect (bleGatt, errMsg) {
     if(errMsg) changeAlertInfo(errMsg, "error") 
     if (!bleGatt?.connected) connectBtnSta.code = 0  
   }
+}
+
+/* 设备连接-数据解析 */
+function parseBuf (e) {
+  const decoder = new TextDecoder("utf-8")
+  const penCmd = (decoder.decode(e.target.value.buffer.slice(window.cfg.msgStartIdx)).trim())
+  console.log(penCmd, penCmd.length)
+  detectBleCmd(penCmd)
 }
 
 /* 设备连接-判定指令 */
@@ -152,9 +153,22 @@ function onBleStatus () {
       clearInterval(tim_onBleStatus)
       changeAlertInfo("蓝牙已断开", "info")
       connectBtnSta.code = 0
+      // 去除原监听事件
+      try {
+        for (let ch of chList) {
+          ch.startNotifications()
+          ch.removeEventListener('characteristicvaluechanged', parseBuf)
+        }
+      } catch (e) {console.log(e)}
+
     }
   }, 200)
 }
+
+onBeforeUnmount(() => {
+  if (bleDev?.gatt?.connected) {bleDev.gatt.disconnect()}
+})
+
 /* alert通知 */
 let timer_alert = 0
 function changeAlertInfo(msg="", tp="info", isShow=true) {
@@ -168,14 +182,13 @@ function changeAlertInfo(msg="", tp="info", isShow=true) {
 /* 跳转 */
 function spAppNameClick () {window.electron.ipcRenderer.send("r:jump", jumpHref)}
 
-onBeforeUnmount(() => {
-  if (bleDev?.gatt?.connected) {bleDev.gatt.disconnect()}
-})
-
 function testBtnClick () {
   // console.log(cmdsOpts[0])
   // console.log(cmdMap[0].val.value)
-  setTimeout(() => {window.electron.ipcRenderer.send("r:mockCmd", JSON.stringify(cmdMap[0].val))}, 3000)
+  setTimeout(() => {
+    window.electron.ipcRenderer.send("r:mockCmd", JSON.stringify(cmdMap[0].val))
+    window.electron.ipcRenderer.send("r:mockCmd", JSON.stringify(cmdMap[1].val))
+  }, 1000)
 }
 </script>
 
