@@ -11,6 +11,10 @@ if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
+    contextBridge.exposeInMainWorld('cfg', {
+      primaryServiceUUID: process.env.primaryServiceUUID,
+      msgStartIdx: process.env.msgStartIdx
+    })
   } catch (error) {
     console.error(error)
   }
@@ -18,3 +22,5 @@ if (process.contextIsolated) {
   window.electron = electronAPI
   window.api = api
 }
+
+

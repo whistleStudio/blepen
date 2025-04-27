@@ -3,37 +3,44 @@
   <!-- <button @click="ipcHandle">Send IPC</button> -->
   <a-alert class="alert" :message="alertInfo.msg" :type="alertInfo.tp" show-icon v-if="alertInfo.isShow"/>
   <div class="menu">
-    <a-input v-model:value="bleName" placeholder="请输入蓝牙名称" class="ipBleName"
+    <a-input v-model:value="bleName" placeholder="请输入蓝牙名称" class="ip-ble-name"
     :disabled="connectBtnSta.code>0" :class="{'disabled-bgc': connectBtnSta.code>0}"
     />
     <a-button type="primary" :loading="connectBtnSta.code==1" @click="connectBtnClick">{{ connectBtnSta.code==2 ? "断开":"" }}连接</a-button>
 
-    <ul class="ulCmdMap">
+
+
+    <ul class="ul-cmd-map">
       <li v-for="(v, i) in cmdMap">
-        <a-checkbox v-model:checked="v.checked"></a-checkbox>
-        <a-input class="ipBleMsg" v-model:value="v.bleMsg" placeholder="接收语句" :key="v"/>
+        <a-checkbox class="cb" v-model:checked="v.checked"></a-checkbox>
+        <a-input class="ip-ble-msg" :disabled="!v.checked" :class="{'disabled-bgc': !v.checked}" v-model:value="v.bleMsg" placeholder="接收语句" :key="v"/>
         ➡️ &nbsp;
         <a-space>
-          <a-select v-model:value="v.valBase" label-in-value style="width: 120px" :options="cmdBase"></a-select>
-          <a-select v-model:value="v.val" label-in-value style="width: 120px" :options="cmdsOpts[i]" ></a-select>
+          <a-select class="select" :class="{'disabled-bgc': !v.checked}" :disabled="!v.checked" v-model:value="v.valBase" label-in-value style="width: 120px" :options="cmdBase"></a-select>
+          <a-select class="select" :class="{'disabled-bgc': !v.checked}" :disabled="!v.checked" v-model:value="v.val" label-in-value style="width: 120px" :options="cmdsOpts[i]" ></a-select>
         </a-space>
       </li>
     </ul>
 
-    <a-button @click="testBtnClick">test</a-button>
+    <!-- <a-button @click="testBtnClick">test</a-button> -->
+
+    <a-tooltip  title="嗐~来点音乐吧" color="#999" placement="right">
+      <span class="app-name" @click="spAppNameClick">蓝牙遥控映射助手v1.0</span>
+    </a-tooltip>
+    
   </div>
 
-  
-
+  <img class="cartoon" src="./assets/images/cartoon.png">
 </template>
 
 <script setup>
 // import Versions from './components/Versions.vue'
-import { ref, reactive, onBeforeUnmount, computed, watch } from 'vue'
+import { ref, reactive, onBeforeUnmount, computed, watch, onMounted } from 'vue'
 import codeMap from './assets/docs/code-map'
 
-const ipcHandle = () => window.electron.ipcRenderer.send('ping')
-const bleName = ref("CFun001")
+// const ipcHandle = () => window.electron.ipcRenderer.send('ping')
+// const bleName = ref("CFun001")
+const bleName = ref("")
 const alertInfo = reactive({
   isShow: false,
   msg: "",
@@ -49,7 +56,7 @@ const cmdMap = reactive([
   {checked: false, bleMsg: "", valBase: {value: "KEY", label: "键盘"},  val: {value: "A", label: "A"}}
 ]) 
 
-let primaryServiceUUID = "55535343-fe7d-4ae5-8fa9-9fafd205e455"
+let jumpHref = "https://whistlestudio.cn/#/home"
 let bleDev
 
 let cmdsOpts = []
@@ -93,7 +100,7 @@ function connectBtnClick () {
 async function bleConnect (bleGatt, errMsg) {
   try {
     errMsg = "未搜索到目标设备"
-    bleDev = await navigator.bluetooth.requestDevice({optionalServices: [primaryServiceUUID], filters: [{ name: bleName.value }]})
+    bleDev = await navigator.bluetooth.requestDevice({optionalServices: [window.cfg.primaryServiceUUID], filters: [{ name: bleName.value }]})
     errMsg = "连接异常"
     console.log("⭐", bleDev)
     bleGatt = await bleDev.gatt.connect()
@@ -102,16 +109,15 @@ async function bleConnect (bleGatt, errMsg) {
       changeAlertInfo("连接成功", "success")
       connectBtnSta.code = 2
       errMsg=""
-      const sv = await bleGatt.getPrimaryService(primaryServiceUUID)
-      // const ch = await sv.getCharacteristic("49535343-8841-43f4-a8d4-ecbe34729bb3")
+      const sv = await bleGatt.getPrimaryService(window.cfg.primaryServiceUUID)
       for (let ch of await sv.getCharacteristics()) {
         ch.startNotifications()
         ch.addEventListener(
         	  'characteristicvaluechanged', e => {
         		//监听设备端的操作 获取到值之后再解析
             const decoder = new TextDecoder("utf-8")
-            const penCmd = (decoder.decode(e.target.value.buffer.slice(4)).trim())
-            console.log('get info:', penCmd)
+            const penCmd = (decoder.decode(e.target.value.buffer.slice(window.cfg.msgStartIdx)).trim())
+            console.log(penCmd, penCmd.length)
             detectBleCmd(penCmd)
         	}
         )
@@ -159,6 +165,9 @@ function changeAlertInfo(msg="", tp="info", isShow=true) {
   } else alertInfo.isShow = false
 }
 
+/* 跳转 */
+function spAppNameClick () {window.electron.ipcRenderer.send("r:jump", jumpHref)}
+
 onBeforeUnmount(() => {
   if (bleDev?.gatt?.connected) {bleDev.gatt.disconnect()}
 })
@@ -179,25 +188,42 @@ function testBtnClick () {
   top: 10px;
   z-index: 2;
 }
-.ipBleName {
+.ip-ble-name {
   width: 200px;
   margin: 20px 5px 30px 0;
   // background-color: #fff !important;
 }
-
-.ulCmdMap {
+.ul-cmd-map {
   padding: 0;
   >li {
-    margin: 10px 0;
-  }
-  .ipBleMsg {
-    width: 200px;
-    margin: 0 10px;
+    margin: 20px 0;
+    .cb {
+      transform: scale(1.2);
+    }
+    .ip-ble-msg {
+      width: 200px;
+      margin: 0 10px;
+    }
+    .select {
+      border-radius: 5px;
+    }
   }
 }
+.app-name {
+  color: var(--ev-c-text-2);
+  font-size: 19px;
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  cursor: pointer;
+}
 
-
-
+.cartoon {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  width: 150px;
+}
 
 
 </style>

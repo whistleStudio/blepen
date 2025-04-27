@@ -2,19 +2,24 @@ import { app, shell, BrowserWindow, ipcMain, screen } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import cfgFile from "../../resources/app.cfg?asset"
 const robot = require("robotjs")
+const fs = require("fs")
+
 
 let selectBleDevCallback = undefined
 let timer_BleSearch = 0
+let primaryServiceUUID, msgStartIdx
 
 function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
+    title: "蓝牙遥控映射助手",
     width: 900,
     height: 670,
     show: false,
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
+    icon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
@@ -85,8 +90,11 @@ app.whenReady().then(() => {
           mockMouse(cmd)
         } else robot.keyTap(cmd.value)
       } catch(e) {console.log(e)}
-    }, 1000)
+    }, 0)
   })
+
+  /* 跳转网页 */
+  ipcMain.on("r:jump", (_, href) => shell.openExternal(href))
 
   createWindow()
 
@@ -101,6 +109,9 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
+
+solveCustomCfg()
+
 
 /* 模拟计算机操作：鼠标行为 */
 function mockMouse (cmd) {
@@ -137,3 +148,30 @@ function mockMouse (cmd) {
   }
 }
 
+/* 读取配置文件 */
+function solveCustomCfg () {
+  try {
+    const buf = fs.readFileSync(cfgFile)
+    const cfgStr = buf.toString()
+    // console.log(cfgStr.split('\n'))
+    for (let v of cfgStr.split('\n')) {
+      v = v.replace(/[\r\n]/g, "").trim()
+      switch(true) {
+        case v[0]=='#' || v[0]=='//':
+          break
+        case /primaryServiceUUID/.test(v):
+          primaryServiceUUID = v.split('=')[1]?.trim()
+          console.log(primaryServiceUUID)
+          // console.log(v.split('primaryServiceUUID:')[1])
+          break
+        case /msgStartIdx/.test(v):
+          msgStartIdx = parseInt(v.split('=')[1]?.trim())
+          console.log(msgStartIdx)
+          break
+      }
+      // console.log(v)
+    }
+  } catch(e) {console.log(e)}
+  process.env.primaryServiceUUID = primaryServiceUUID ? primaryServiceUUID : "Generic Access"
+  process.env.msgStartIdx = msgStartIdx ? msgStartIdx : 0
+}
