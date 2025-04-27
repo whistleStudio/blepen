@@ -90,7 +90,7 @@ app.whenReady().then(() => {
           mockMouse(cmd)
         } else robot.keyTap(cmd.value)
       } catch(e) {console.log(e)}
-    }, 0)
+    }, 100)
   })
 
   /* 跳转网页 */
@@ -116,6 +116,7 @@ solveCustomCfg()
 /* 模拟计算机操作：鼠标行为 */
 function mockMouse (cmd) {
   const curMousePos = robot.getMousePos()
+  console.log(curMousePos)
   switch (true) {
     case /单击/.test(cmd.label):
       robot.mouseClick(cmd.value.toLowerCase())

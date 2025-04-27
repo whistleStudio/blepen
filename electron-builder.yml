@@ -2,12 +2,15 @@ appId: com.electron.app
 productName: blepen
 directories:
   buildResources: build
+asar: true
+compression: maximum
 files:
   - '!**/.vscode/*'
   - '!src/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!**/*.map'
 asarUnpack:
   - resources/**
 win:
