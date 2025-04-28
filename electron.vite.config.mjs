@@ -2,6 +2,8 @@ import { resolve } from 'path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import vue from '@vitejs/plugin-vue'
 import compression from 'vite-plugin-compression'
+import { visualizer } from "rollup-plugin-visualizer";
+
 const isProd = process.env.NODE_ENV === 'production';
 
 export default defineConfig({
@@ -14,7 +16,8 @@ export default defineConfig({
         threshold: 10240, // 对超过 10KB 的文件进行压缩
         algorithm: 'gzip', // 使用 gzip 压缩算法
         ext: '.gz', // 压缩后文件的扩展名
-      })
+      }),
+      visualizer({open:false, filename: "dist/stats2.html"})
     ],
     build: {
       minify: isProd ? 'terser' : false, // 告诉 vite 用 terser 来压缩
@@ -44,6 +47,7 @@ export default defineConfig({
     },
     plugins: [
       vue(),
+      visualizer({open:false, filename: "dist/stats.html"}),
       compression({
         verbose: true, // 输出压缩日志
         disable: false, // 是否禁用压缩

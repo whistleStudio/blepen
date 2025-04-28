@@ -8,8 +8,6 @@
     />
     <a-button type="primary" :loading="connectBtnSta.code==1" @click="connectBtnClick">{{ connectBtnSta.code==2 ? "断开":"" }}连接</a-button>
 
-
-
     <ul class="ul-cmd-map">
       <li v-for="(v, i) in cmdMap">
         <a-checkbox class="cb" v-model:checked="v.checked"></a-checkbox>
@@ -22,10 +20,12 @@
       </li>
     </ul>
 
-    <a-button @click="testBtnClick">test</a-button>
+    <div class="shortcut-tip">Alt+Shift+F2  取消全部消息监听</div>
+
+    <!-- <a-button @click="testBtnClick">test</a-button> -->
 
     <a-tooltip  title="嗐~来点音乐吧" color="#999" placement="right">
-      <span class="app-name" @click="spAppNameClick">蓝牙遥控映射助手v1.0</span>
+      <span class="app-name" @click="spAppNameClick">蓝牙遥控映射助手v{{ appVersion }}</span>
     </a-tooltip>
     
   </div>
@@ -38,8 +38,7 @@
 import { ref, reactive, onBeforeUnmount, computed, watch, onMounted } from 'vue'
 import codeMap from './assets/docs/code-map'
 
-// const ipcHandle = () => window.electron.ipcRenderer.send('ping')
-// const bleName = ref("CFun001")
+const appVersion = window.appVersion
 const bleName = ref("")
 const alertInfo = reactive({
   isShow: false,
@@ -58,12 +57,12 @@ const cmdMap = reactive([
 
 let jumpHref = "https://whistlestudio.cn/#/home"
 let bleDev, chList = []
-
 let cmdsOpts = []
 
 for (let v of cmdMap) {
   cmdsOpts.push(computed(() => codeMap[v.valBase.value].map(item => ({value: item[0], label: item[1]})))) 
 }
+// select多级联动，更改I级时II级重置为首项
 watch(
   () => cmdMap.map(v => v.valBase.value),
   (newV, oldV) => {
@@ -165,6 +164,14 @@ function onBleStatus () {
   }, 200)
 }
 
+/* 快捷键 */
+window.electron.ipcRenderer.on("m:stopDetect", _ => {
+  console.log("m:stopDetect")
+  for (let v of cmdMap) {
+    v.checked = false
+  }
+})
+
 onBeforeUnmount(() => {
   if (bleDev?.gatt?.connected) {bleDev.gatt.disconnect()}
 })
@@ -183,8 +190,6 @@ function changeAlertInfo(msg="", tp="info", isShow=true) {
 function spAppNameClick () {window.electron.ipcRenderer.send("r:jump", jumpHref)}
 
 function testBtnClick () {
-  // console.log(cmdsOpts[0])
-  // console.log(cmdMap[0].val.value)
   setTimeout(() => {
     window.electron.ipcRenderer.send("r:mockCmd", JSON.stringify(cmdMap[0].val))
     window.electron.ipcRenderer.send("r:mockCmd", JSON.stringify(cmdMap[1].val))
@@ -237,6 +242,5 @@ function testBtnClick () {
   bottom: 20px;
   width: 150px;
 }
-
 
 </style>

@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, screen } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, screen, globalShortcut} from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -9,11 +9,11 @@ const fs = require("fs")
 
 let selectBleDevCallback = undefined
 let timer_BleSearch = 0
-let primaryServiceUUID, msgStartIdx
+let mainWindow, primaryServiceUUID, msgStartIdx
 
 function createWindow() {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     title: "蓝牙遥控映射助手",
     width: 900,
     height: 670,
@@ -65,8 +65,8 @@ function createWindow() {
 
 let screenW, screenH
 app.whenReady().then(() => {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
+  electronApp.setAppUserModelId('whistlestudio.blepen')
+
 
   // 获取主显示器的宽高
   const mainDisplay = screen.getPrimaryDisplay()
@@ -95,6 +95,11 @@ app.whenReady().then(() => {
 
   /* 跳转网页 */
   ipcMain.on("r:jump", (_, href) => shell.openExternal(href))
+
+  /* 快捷键 */
+  globalShortcut.register("Alt+Shift+F2", () => {
+    if (mainWindow) mainWindow.send("m:stopDetect")
+  })
 
   createWindow()
 
