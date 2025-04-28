@@ -17,10 +17,11 @@ win:
   executableName: bleMock
   icon: build/icon.ico
 nsis:
-  artifactName: ${name}-${version}-setup.${ext}
+  artifactName: bleMock-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+  oneClick: false
   allowToChangeInstallationDirectory: true
 mac:
   entitlementsInherit: build/entitlements.mac.plist
