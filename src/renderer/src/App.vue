@@ -52,6 +52,9 @@ const cmdMap = reactive([
   {checked: false, bleMsg: "", valBase: {value: "KEY", label: "键盘"},  val: {value: "A", label: "A"}},
   {checked: false, bleMsg: "", valBase: {value: "KEY", label: "键盘"},  val: {value: "A", label: "A"}},
   {checked: false, bleMsg: "", valBase: {value: "KEY", label: "键盘"},  val: {value: "A", label: "A"}},
+  {checked: false, bleMsg: "", valBase: {value: "KEY", label: "键盘"},  val: {value: "A", label: "A"}},
+  {checked: false, bleMsg: "", valBase: {value: "KEY", label: "键盘"},  val: {value: "A", label: "A"}},
+  {checked: false, bleMsg: "", valBase: {value: "KEY", label: "键盘"},  val: {value: "A", label: "A"}},
   {checked: false, bleMsg: "", valBase: {value: "KEY", label: "键盘"},  val: {value: "A", label: "A"}}
 ]) 
 
