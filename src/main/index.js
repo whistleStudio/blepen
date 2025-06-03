@@ -11,6 +11,7 @@ let selectBleDevCallback = undefined
 let timer_BleSearch = 0
 let mainWindow, primaryServiceUUID, msgStartIdx
 
+
 function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -80,18 +81,53 @@ app.whenReady().then(() => {
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
 
-  /* 模拟计算机操作 */
+
+  let latestCmd = null;       // 保存最新指令
+  let isProcessing = false;   // 是否正在处理指令
+  
   ipcMain.on("r:mockCmd", (_, cmd) => {
-    cmd = JSON.parse(cmd)
-    console.log("get mockCmd:", cmd)
-    setTimeout(() => {
-      try{
-        if (/鼠标/.test(cmd.label)) {
-          mockMouse(cmd)
-        } else robot.keyTap(cmd.value)
-      } catch(e) {console.log(e)}
-    }, 100)
-  })
+    // 每次收到新指令，都覆盖
+    latestCmd = JSON.parse(cmd);
+    processLatestCmd();
+  });
+  
+  function processLatestCmd() {
+    // 如果当前在处理，不做任何事（等当前处理完会自动继续）
+    if (isProcessing) return;
+    if (!latestCmd) return;
+  
+    isProcessing = true;
+    const cmdToProcess = latestCmd;
+    latestCmd = null; // 清空，表示已取走
+  
+    setImmediate(() => { // 用 setImmediate 确保异步
+      try {
+        if (/鼠标/.test(cmdToProcess.label)) {
+          mockMouse(cmdToProcess);
+        } else {
+          robot.keyTap(cmdToProcess.value);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      isProcessing = false;
+      // 处理完后如果还有新指令，立刻处理
+      if (latestCmd) processLatestCmd();
+    });
+  }
+
+  /* 模拟计算机操作 */
+  // ipcMain.on("r:mockCmd", (_, cmd) => {
+  //   cmd = JSON.parse(cmd)
+  //   console.log("get mockCmd:", cmd)
+  //   setTimeout(() => {
+  //     try{
+  //       if (/鼠标/.test(cmd.label)) {
+  //         mockMouse(cmd)
+  //       } else robot.keyTap(cmd.value)
+  //     } catch(e) {console.log(e)}
+  //   }, 0)
+  // })
 
   /* 跳转网页 */
   ipcMain.on("r:jump", (_, href) => shell.openExternal(href))
